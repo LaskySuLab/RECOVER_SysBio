@@ -106,6 +106,7 @@ sing_var_association_cat <- function(outcome_name, dat = pheno){
     
     if(outcome_name == "pasc_score_yn_2024") {
       # Chi-sq test for binary outcome
+      dat$pasc_score_yn_2024 <- as.factor(dat$pasc_score_yn_2024)
       covariate <- as.factor(dat[[var]])
       pval <- chisq.test(dat[[outcome_name]], covariate)$p.value
     } else {
@@ -132,14 +133,14 @@ sing_var_association_cat <- function(outcome_name, dat = pheno){
 
 
 create_asso_pval_table <- function(dat){
-  pheno$pasc_score_yn_2024 <- as.factor(pheno$pasc_score_yn_2024)
+  dat$pasc_score_yn_2024 <- as.factor(dat$pasc_score_yn_2024)
   asso_res_total <- c()
   for(outcome in c("symp_ct", "pasc_score_2024", "pasc_score_yn_2024")){
     asso_res_total <- rbind(asso_res_total, sing_var_association(outcome, dat))
   }
   
   asso_res_total_cat <- c()
-  # pheno$sd_income <- as.factor(pheno$sd_income)
+  dat$sd_income <- as.factor(dat$sd_income)
   for(outcome in c("symp_ct", "pasc_score_2024", "pasc_score_yn_2024")){
     asso_res_total_cat <- rbind(asso_res_total_cat, sing_var_association_cat(outcome, dat))
   }
@@ -148,8 +149,14 @@ create_asso_pval_table <- function(dat){
   asso_res_total <- rbind(asso_res_total, asso_res_total_cat)
   asso_res_total_wide <- asso_res_total |> pivot_wider(names_from = Covariate,
                                                        values_from = P)
+  
+  asso_res_total_wide[, -1] <- as.data.frame(asso_res_total_wide[, -1]) |>
+     mutate(across(everything(), ~ signif(., 3)))
   return(as.data.frame(asso_res_total_wide))
 }
+
+
+table_global <- create_asso_pval_table(pheno)
 
 time0 <- pheno |> filter(timepoint == "0m")
 table_time0 <- create_asso_pval_table(time0)
@@ -173,3 +180,4 @@ time3y <-  pheno |> filter(timepoint == "3y")
 table_time3y <- create_asso_pval_table(time3y)
 
 
+table(pheno$timepoint)
