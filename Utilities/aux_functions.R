@@ -40,8 +40,19 @@ read_prote <- function(){
 }
 
 read_pheno <-  function(phenos){
-  #read phenotype
-    pheno_all <- read.csv("/proj/rerecs/rerec00/data/phenotype/data/protein_pilot/phenotype_adult_prote_pilot_masked20250805.csv") 
+
+  pheno_path <- "/proj/rerecs/rerec00/data/phenotype/data/protein_pilot/"
+  
+  files <- list.files(pheno_path, pattern = "^phenotype_adult_prote_pilot_masked\\d{8}\\.csv$", full.names = TRUE)
+  file_dates <- stringr::str_extract(files, "\\d{8}")  # Extract 8-digit date strings
+  file_dates <- as.Date(file_dates, format = "%Y%m%d")  # Convert to Date objects
+  
+  #find most recent
+  latest_file <- files[which.max(file_dates)]
+  pheno_all <- read.csv(latest_file)
+  
+  cat("Loaded pheno:", latest_file, "\n")
+  
   #subset phenotype columns
   pheno_s <- pheno_all %>%
     select(any_of(unique(c("prote_topmed_id", phenos))))  %>%
