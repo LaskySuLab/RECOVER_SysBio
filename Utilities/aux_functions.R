@@ -1,11 +1,24 @@
 library(dplyr)
 
+#--factors
 tps <- c("pre_inf","0m","3m","6m","1y","2y","3y")
-
 factor_tp <- function(data){
   return(factor(data, levels = tps))
 }
 
+LC_cat <- c("likely LC",    "possible LC", "no LC", "censored")
+factor_LC <- function(data){
+  return(factor(data , levels = names(LC_cat)))
+}
+
+#--colors
+#significance colors
+sig_colors <- c("ns" = "gray70", "pval<0.05" = "#E69F00", "fdr<0.05" = "#6A0DAD")
+#long covid categories
+colors_LC <- setNames(c("#D36C6C", "#4A90E2", "#009E73", "white"), LC_cat)
+
+
+#--plots
 theme <- theme(
   axis.text = element_text(size = 12),
   axis.title = element_text(size = 12),
@@ -14,6 +27,7 @@ theme <- theme(
   legend.title = element_text(size = 12)
 )
 
+#--read data
 read_prote <- function(){
 #read QCd proteomics data
   prote <- read.csv("/proj/rerecs/rerec00/data/protein/RECOVER_TOPMed_2025/results/proteomics_qc/20250715_Pilot_2000/20250805/protein_20250805.csv")
@@ -26,8 +40,19 @@ read_prote <- function(){
 }
 
 read_pheno <-  function(phenos){
-  #read phenotype
-    pheno_all <- read.csv("/proj/rerecs/rerec00/data/phenotype/data/protein_pilot/phenotype_adult_prote_pilot_masked20250805.csv") 
+
+  pheno_path <- "/proj/rerecs/rerec00/data/phenotype/data/protein_pilot/"
+  
+  files <- list.files(pheno_path, pattern = "^phenotype_adult_prote_pilot_masked\\d{8}\\.csv$", full.names = TRUE)
+  file_dates <- stringr::str_extract(files, "\\d{8}")  # Extract 8-digit date strings
+  file_dates <- as.Date(file_dates, format = "%Y%m%d")  # Convert to Date objects
+  
+  #find most recent
+  latest_file <- files[which.max(file_dates)]
+  pheno_all <- read.csv(latest_file)
+  
+  cat("Loaded pheno:", latest_file, "\n")
+  
   #subset phenotype columns
   pheno_s <- pheno_all %>%
     select(any_of(unique(c("prote_topmed_id", phenos))))  %>%
@@ -41,4 +66,5 @@ merge_prote_pheno <- function(phenos){
     left_join(pheno_s, by = "TOPMed.ID") %>%
     filter(TOPMed.ID %in% pheno_s$TOPMed.ID)
 }
+
 
